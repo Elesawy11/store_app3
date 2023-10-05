@@ -42,9 +42,8 @@ class Api {
 
     if (response.statusCode == 200) {
       Map<String, dynamic> data = jsonDecode(response.body);
-      ProductModel product = ProductModel.fromJson(data);
 
-      return product;
+      return data;
     } else {
       throw Exception(
           'there is a problem with status code ${response.statusCode}');

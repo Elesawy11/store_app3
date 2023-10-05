@@ -1,62 +1,8 @@
-import 'dart:async';
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:store_app3/models/product_model.dart';
-import 'package:store_app3/services/add_product.dart';
 import 'package:store_app3/widgets/product_form.dart';
-
-Future<ProductModel> createAlbum(String title) async {
-  final response = await http.post(
-    Uri.parse('https://fakestoreapi.com/products'),
-    headers: <String, String>{
-      'Content-Type': 'application/json; charset=UTF-8',
-    },
-    body: jsonEncode(<String, dynamic>{
-      'title': title,
-      'price': 25,
-      'description': 'Hello',
-      'category': 'jewelary',
-      'image': 'assets/images/photo_2022-10-05_01-14-30.jpg'
-    }),
-  );
-
-  if (response.statusCode == 200) {
-    Map<String, dynamic> data = jsonDecode(response.body);
-    ProductModel product = ProductModel.fromJson(data);
-
-    return product;
-  } else {
-    throw Exception('Failed to create album.');
-  }
-}
-
-// class Album {
-//   final String title;
-//   final dynamic price;
-//   final String description;
-//   final String image;
-//   final String category;
-
-//   Album(
-//       {required this.title,
-//       required this.price,
-//       required this.description,
-//       required this.image,
-//       required this.category});
-
-//   factory Album.fromJson(Map<String, dynamic> json) {
-//     return Album(
-//       title: json['title'],
-//       price: json['price'],
-//       category: json['category'],
-//       image: json['image'],
-//       description: json['description']
-
-//     );
-//   }
-// }
+import '../cubits/create_cubit/create_cubit.dart';
 
 class MyApp extends StatefulWidget {
   const MyApp({super.key});
@@ -68,62 +14,88 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  final TextEditingController _controller = TextEditingController();
-  Future<ProductModel>? _futureAlbum;
+  final TextEditingController _controller0 = TextEditingController();
+  final TextEditingController _controller1 = TextEditingController();
+  final TextEditingController _controller2 = TextEditingController();
+  // final TextEditingController _controller3 = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Create Data Example',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Create Data Example'),
       ),
-      home: Scaffold(
-        appBar: AppBar(
-          title: const Text('Create Data Example'),
-        ),
-        body: Container(
-          alignment: Alignment.center,
-          padding: const EdgeInsets.all(8),
-          child: (_futureAlbum == null) ? buildColumn() : buildFutureBuilder(),
-        ),
+      body: BlocBuilder<CreateCubit, CreateState>(
+        builder: (context, state) {
+          if (state is CreateLoading) {
+            return const Center(
+              child: CircularProgressIndicator(),
+            );
+          } else if (state is CreateFailure) {
+            return Center(
+              child: Text(state.errMessage),
+            );
+          } else if (state is CreateSuccess) {
+            return BuildFutureBuilder(
+              productModel: state.productModel,
+            );
+          }
+          return buildColumn();
+        },
       ),
     );
   }
 
-  Column buildColumn() {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: <Widget>[
-       
-        TextField(
-          controller: _controller,
-          decoration: const InputDecoration(hintText: 'Enter Title'),
-        ),
-        ElevatedButton(
-          onPressed: () {
-            setState(() {
-              _futureAlbum = AddProduct().addProduct(title: _controller.text);
-            });
-          },
-          child: const Text('Create Data'),
-        ),
-      ],
-    );
-  }
-
-  FutureBuilder<ProductModel> buildFutureBuilder() {
-    return FutureBuilder<ProductModel>(
-      future: _futureAlbum,
-      builder: (context, snapshot) {
-        if (snapshot.hasData) {
-          return ProductForm(productModel: snapshot.data!);
-        } else if (snapshot.hasError) {
-          return Text('${snapshot.error}');
-        }
-
-        return const CircularProgressIndicator();
-      },
+  Container buildColumn() {
+    return Container(
+      alignment: Alignment.center,
+      padding: const EdgeInsets.all(8),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: <Widget>[
+          TextField(
+            controller: _controller0,
+            decoration: const InputDecoration(hintText: 'Enter Title'),
+          ),
+          const SizedBox(
+            height: 24,
+          ),TextField(
+            controller: _controller1,
+            decoration: const InputDecoration(hintText: 'Enter Price'),
+          ),
+          const SizedBox(
+            height: 24,
+          ),TextField(
+            controller: _controller2,
+            decoration: const InputDecoration(hintText: 'Enter Category'),
+          ),
+          const SizedBox(
+            height: 24,
+          ),
+          const SizedBox(
+            height: 24,
+          ),
+          ElevatedButton(
+            onPressed: () {
+              BlocProvider.of<CreateCubit>(context)
+                  .creatProduct(title: _controller0.text,price: _controller1.text,category: _controller2.text);
+            },
+            child: const Text('Create Data'),
+          ),
+        ],
+      ),
     );
   }
 }
+
+class BuildFutureBuilder extends StatelessWidget {
+  const BuildFutureBuilder({super.key, required this.productModel});
+  final ProductModel productModel;
+
+  @override
+  Widget build(BuildContext context) {
+    return ProductForm(productModel: productModel);
+  }
+}
+
+
